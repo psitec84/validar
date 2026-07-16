@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación Oficial de Certificados</title>
+    <!-- Cargamos la librería de Supabase -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 450px; width: 90%; }
+        h2 { margin-top: 0; }
+        .loading { color: #666; }
+        .valido { color: #2e7d32; background-color: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; }
+        .invalido { color: #c62828; background-color: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #ffcdd2; }
+        .datos { text-align: left; margin-top: 15px; background: #fafafa; padding: 12px; border-radius: 6px; font-size: 14px; }
+        .datos p { margin: 6px 0; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="resultado">
+            <h2 class="loading">Buscando en el Registro Oficial...</h2>
+            <p>Por favor, espere un momento.</p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://supabase.com/dashboard/project/pheaqwbohnqrhougpgyd";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZWFxd2JvaG5xcmhvdWdwZ3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY5NzMsImV4cCI6MjA5OTczMjk3M30._kJnOjn2Q29EJgtrfdeJATwoHBmAFrfIbY-2c91a-uk";
+
+        // Inicializar Supabase
+        const supabase = @supabase/supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function verificarDiploma() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const folioBuscado = urlParams.get('folio');
+            const contenedor = document.getElementById('resultado');
+
+            if (!folioBuscado) {
+                contenedor.innerHTML = `
+                    <h2 style="color: #d32f2f;">⚠️ Error de Lectura</h2>
+                    <p>No se detectó ningún folio en el código QR. Inténtalo de nuevo.</p>
+                `;
+                return;
+            }
+
+          
+            const { data, error } = await supabase
+                .from('DIPLOMAS')
+                .select('*')
+                .eq('FOLIO', folioBuscado)
+                .single();
+
+            if (error || !data) {
+                contenedor.innerHTML = `
+                    <div class="invalido">
+                        <h2>❌ Certificado NO Válido</h2>
+                        <p>El folio <strong>${folioBuscado}</strong> no coincide con ningún documento emitido en nuestros registros.</p>
+                    </div>
+                `;
+            } else {
+                contenedor.innerHTML = `
+                    <div class="valido">
+                        <h2>✅ Certificado Verificado</h2>
+                        <p>Este documento es auténtico y se encuentra registrado en el sistema.</p>
+                    </div>
+                    <div class="datos">
+                        <p><strong>Folio:</strong> ${data.FOLIO}</p>
+                        <p><strong>Alumno:</strong> ${data.NOMBRE}</p>
+                        <p><strong>Programa:</strong> ${data.DIPLOMADO}</p>
+                        <p><strong>Duración:</strong> ${data.DURACION}</p>
+                        <p><strong>Fecha de Inicio:</strong> ${data.INICIO}</p>
+                        <p><strong>Fecha de Fin:</strong> ${data.FIN}</p>
+                        <p><strong>Estatus actual:</strong> ${data.ESTADO}</p>
+                    </div>
+                `;
+            }
+        }
+
+        verificarDiploma();
+    </script>
+</body>
+</html>
+
