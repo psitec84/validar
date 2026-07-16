@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validación Oficial de Certificados</title>
-    <!-- Cargamos la librería de Supabase -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- NUEVA LIBRERÍA: Utiliza un servidor con permisos CORS abiertos -->
+    <script src="https://unpkg.com"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 450px; width: 90%; }
@@ -27,11 +27,11 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://supabase.com/dashboard/project/pheaqwbohnqrhougpgyd";
+        const SUPABASE_URL = "https://supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZWFxd2JvaG5xcmhvdWdwZ3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY5NzMsImV4cCI6MjA5OTczMjk3M30._kJnOjn2Q29EJgtrfdeJATwoHBmAFrfIbY-2c91a-uk";
 
-        // Inicializar Supabase
-        const supabase = @supabase/supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Inicialización nativa directa
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function verificarDiploma() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -46,7 +46,6 @@
                 return;
             }
 
-          
             const { data, error } = await supabase
                 .from('DIPLOMAS')
                 .select('*')
@@ -83,4 +82,5 @@
     </script>
 </body>
 </html>
+
 
