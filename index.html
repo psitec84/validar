@@ -4,65 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validación de Certificados</title>
-    <!-- Cargamos la librería oficial de Supabase -->
-    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 450px; width: 90%; }
-        .valido { color: #2e7d32; background-color: #e8f5e9; padding: 15px; border-radius: 8px; }
-        .invalido { color: #c62828; background-color: #ffebee; padding: 15px; border-radius: 8px; }
-        .datos { text-align: left; margin-top: 15px; background: #fafafa; padding: 12px; border-radius: 6px; }
+        .valido { color: #2e7d32; background-color: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; }
+        .invalido { color: #c62828; background-color: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #ffcdd2; }
+        .datos { text-align: left; margin-top: 15px; background: #fafafa; padding: 12px; border-radius: 6px; font-size: 14px; }
+        .datos p { margin: 6px 0; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <div id="resultado">
-            <h2>Cargando verificador...</h2>
+            <h2>Verificando documento...</h2>
+            <p>Por favor, espere un momento.</p>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = "https://supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZWFxd2JvaG5xcmhvdWdwZ3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY5NzMsImV4cCI6MjA5OTczMjk3M30._kJnOjn2Q29EJgtrfdeJATwoHBmAFrfIbY-2c91a-uk";
-
-        async function comprobar() {
+        // Configuración directa de la API de Supabase
+        const PROJECT_ID = "pheaqwbohnqrhougpgyd";
+        const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZWFxd2JvaG5xcmhvdWdwZ3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY5NzMsImV4cCI6MjA5OTczMjk3M30._kJnOjn2Q29EJgtrfdeJATwoHBmAFrfIbY-2c91a-uk";
+        
+        async function consultarFormulario() {
             const contenedor = document.getElementById('resultado');
             const urlParams = new URLSearchParams(window.location.search);
             const folioBuscado = urlParams.get('folio');
 
             if (!folioBuscado) {
-                contenedor.innerHTML = "<h2>⚠️ Falta el folio en el enlace</h2>";
+                contenedor.innerHTML = "<h2>⚠️ Error de acceso</h2><p>Falta el código de folio en el enlace.</p>";
                 return;
             }
 
-            try {
-                const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                const { data, error } = await client.from('DIPLOMAS').select('*').eq('FOLIO', folioBuscado).single();
+            // Construcción de la URL de consulta directa (Sin librerías externas)
+            const endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?FOLIO=eq.${encodeURIComponent(folioBuscado)}`;
 
-                if (error) {
-                    contenedor.innerHTML = `<div class="invalido"><h2>❌ Error de conexión</h2><p>${error.message}</p></div>`;
+            try {
+                const respuesta = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': ANON_KEY,
+                        'Authorization': `Bearer ${ANON_KEY}`
+                    }
+                });
+
+                if (!respuesta.ok) {
+                    contenedor.innerHTML = `<div class="invalido"><h2>❌ Error de servidor</h2><p>Código de estado: ${respuesta.status}</p></div>`;
                     return;
                 }
 
-                if (!data) {
-                    contenedor.innerHTML = `<div class="invalido"><h2>❌ No encontrado</h2><p>El folio no existe.</p></div>`;
-                } else {
+                const datosLista = await respuesta.json();
+
+                // Si la lista está vacía significa que el folio no existe
+                if (datosLista.length === 0) {
                     contenedor.innerHTML = `
-                        <div class="valido"><h2>✅ Certificado Verificado</h2></div>
+                        <div class="invalido">
+                            <h2>❌ Certificado NO Válido</h2>
+                            <p>El folio <strong>${folioBuscado}</strong> no existe en nuestros registros oficiales.</p>
+                        </div>
+                    `;
+                } else {
+                    const data = datosLista[0]; // Tomamos el alumno encontrado
+                    contenedor.innerHTML = `
+                        <div class="valido">
+                            <h2>✅ Certificado Verificado</h2>
+                            <p>Este documento es auténtico y oficial.</p>
+                        </div>
                         <div class="datos">
-                            <p><strong>Folio:</strong> ${data.FOLIO}</p>
-                            <p><strong>Alumno:</strong> ${data.NOMBRE}</p>
-                            <p><strong>Programa:</strong> ${data.DIPLOMADO}</p>
-                            <p><strong>Estatus:</strong> ${data.ESTADO}</p>
-                        </div>`;
+                            <p><strong>Folio:</strong> ${data.FOLIO || 'No registrado'}</p>
+                            <p><strong>Alumno:</strong> ${data.NOMBRE || 'No registrado'}</p>
+                            <p><strong>Programa:</strong> ${data.DIPLOMADO || 'No registrado'}</p>
+                            <p><strong>Duración:</strong> ${data.DURACION || 'No registrado'}</p>
+                            <p><strong>Fecha de Inicio:</strong> ${data.INICIO || 'No registrado'}</p>
+                            <p><strong>Fecha de Fin:</strong> ${data.FIN || 'No registrado'}</p>
+                            <p><strong>Estatus:</strong> ${data.ESTADO || 'No registrado'}</p>
+                        </div>
+                    `;
                 }
             } catch (err) {
-                contenedor.innerHTML = `<div class="invalido"><h2>⚠️ Error de código</h2><p>${err.message}</p></div>`;
+                contenedor.innerHTML = `<div class="invalido"><h2>⚠️ Error de red</h2><p>No se pudo conectar a la base de datos.</p></div>`;
             }
         }
 
-        comprobar();
+        // Ejecutar la consulta inmediatamente
+        consultarFormulario();
     </script>
 </body>
 </html>
