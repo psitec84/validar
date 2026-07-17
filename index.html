@@ -17,7 +17,7 @@
 <body>
 
     <div class="card">
-        <!-- Logotipo Institucional en la parte superior -->
+        <!-- Logotipo Institucional -->
         <img src="https://githubusercontent.com" class="logo" alt="Logo Psicología Tecnológica" onerror="this.style.display='none';">
         
         <div id="resultado">
@@ -40,23 +40,26 @@
                 return;
             }
 
-            const endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?FOLIO=eq.${encodeURIComponent(folioBuscado)}`;
+            // Probamos primero buscando en mayúscula y si falla en minúscula
+            let endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?FOLIO=eq.${encodeURIComponent(folioBuscado)}`;
 
             try {
-                const respuesta = await fetch(endpoint, {
+                let respuesta = await fetch(endpoint, {
                     method: 'GET',
-                    headers: {
-                        'apikey': ANON_KEY,
-                        'Authorization': `Bearer ${ANON_KEY}`
-                    }
+                    headers: { 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}` }
                 });
 
-                if (!respuesta.ok) {
-                    contenedor.innerHTML = `<div class="invalido"><h2>❌ Error de servidor</h2><p>Código de estado: ${respuesta.status}</p></div>`;
-                    return;
-                }
+                let datosLista = await respuesta.json();
 
-                const datosLista = await respuesta.json();
+                // Si no encuentra por FOLIO (mayúsculas), intenta buscar por folio (minúsculas)
+                if (datosLista.length === 0 || datosLista.code === "PGRST204") {
+                    endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?folio=eq.${encodeURIComponent(folioBuscado)}`;
+                    respuesta = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: { 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}` }
+                    });
+                    datosLista = await respuesta.json();
+                }
 
                 if (datosLista.length === 0) {
                     contenedor.innerHTML = `
@@ -66,11 +69,19 @@
                         </div>
                     `;
                 } else {
-                    const data = datosLista;
+                    const data = datosLista[0];
                     
-                    // Modificación de Estatus según tu requerimiento
-                    let estatusTexto = data.ESTADO || 'No registrado';
-                    if (estatusTexto.toUpperCase() === "DOCUMENTO VALIDO" || estatusTexto.toUpperCase() === "ACTIVO") {
+                    // Extraer los valores soportando tanto MAYÚSCULAS como minúsculas
+                    const f_folio = data.FOLIO || data.folio || 'No registrado';
+                    const f_nombre = data.NOMBRE || data.nombre || 'No registrado';
+                    const f_diplomado = data.DIPLOMADO || data.diplomado || 'No registrado';
+                    const f_duracion = data.DURACION || data.duracion || '0';
+                    const f_inicio = data.INICIO || data.inicio || 'No registrado';
+                    const f_fin = data.FIN || data.fin || 'No registrado';
+                    
+                    let estatusOriginal = data.ESTADO || data.estado || 'No registrado';
+                    let estatusTexto = estatusOriginal;
+                    if (estatusOriginal.toUpperCase() === "DOCUMENTO VALIDO" || estatusOriginal.toUpperCase() === "ACTIVO") {
                         estatusTexto = "DOCUMENTO CON VALOR CURRICULAR";
                     }
 
@@ -80,12 +91,12 @@
                             <p>Este documento es auténtico y oficial.</p>
                         </div>
                         <div class="datos">
-                            <p><strong>Folio:</strong> ${data.FOLIO || 'No registrado'}</p>
-                            <p><strong>Alumno:</strong> ${data.NOMBRE || 'No registrado'}</p>
-                            <p><strong>Programa:</strong> ${data.DIPLOMADO || 'No registrado'}</p>
-                            <p><strong>Duración:</strong> ${data.DURACION || '0'} HRS</p>
-                            <p><strong>Fecha de Inicio:</strong> ${data.INICIO || 'No registrado'}</p>
-                            <p><strong>Fecha de Fin:</strong> ${data.FIN || 'No registrado'}</p>
+                            <p><strong>Folio:</strong> ${f_folio}</p>
+                            <p><strong>Alumno:</strong> ${f_nombre}</p>
+                            <p><strong>Programa:</strong> ${f_diplomado}</p>
+                            <p><strong>Duración:</strong> ${f_duracion} HRS</p>
+                            <p><strong>Fecha de Inicio:</strong> ${f_inicio}</p>
+                            <p><strong>Fecha de Fin:</strong> ${f_fin}</p>
                             <p><strong>Estatus:</strong> ${estatusTexto}</p>
                         </div>
                     `;
