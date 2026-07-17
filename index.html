@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 450px; width: 100%; box-sizing: border-box; }
-        .logo { max-width: 150px; height: auto; margin-bottom: 20px; }
+        .logo { max-width: 160px; height: auto; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto; }
         .valido { color: #2e7d32; background-color: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; }
         .invalido { color: #c62828; background-color: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #ffcdd2; }
         .datos { text-align: left; margin-top: 15px; background: #fafafa; padding: 15px; border-radius: 6px; font-size: 14px; }
@@ -17,8 +17,8 @@
 <body>
 
     <div class="card">
-        <!-- Logotipo Institucional -->
-        <img src="https://githubusercontent.com" class="logo" alt="Logo Psicología Tecnológica" onerror="this.style.display='none';">
+        <!-- RUTA UNIVERSAL: Busca la imagen directamente en tu propio dominio web activo -->
+        <img src="image_FueY6o.png" class="logo" alt="Logo Psicología Tecnológica" id="img_logo">
         
         <div id="resultado">
             <h2>Verificando documento...</h2>
@@ -30,6 +30,15 @@
         const PROJECT_ID = "pheaqwbohnqrhougpgyd";
         const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoZWFxd2JvaG5xcmhvdWdwZ3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY5NzMsImV4cCI6MjA5OTczMjk3M30._kJnOjn2Q29EJgtrfdeJATwoHBmAFrfIbY-2c91a-uk";
         
+        // Truco extra: Si el archivo se subió en mayúsculas por error del celular, este código lo corrige solo
+        document.getElementById('img_logo').onerror = function() {
+            if(this.src.indexOf('image_FueY6o.png') !== -1) {
+                this.src = 'image_fuey6o.png';
+            } else if (this.src.indexOf('image_fuey6o.png') !== -1) {
+                this.src = 'image_FueY6o.PNG';
+            }
+        };
+
         async function consultarFormulario() {
             const contenedor = document.getElementById('resultado');
             const urlParams = new URLSearchParams(window.location.search);
@@ -40,7 +49,6 @@
                 return;
             }
 
-            // Probamos primero buscando en mayúscula y si falla en minúscula
             let endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?FOLIO=eq.${encodeURIComponent(folioBuscado)}`;
 
             try {
@@ -51,7 +59,6 @@
 
                 let datosLista = await respuesta.json();
 
-                // Si no encuentra por FOLIO (mayúsculas), intenta buscar por folio (minúsculas)
                 if (datosLista.length === 0 || datosLista.code === "PGRST204") {
                     endpoint = `https://${PROJECT_ID}.supabase.co/rest/v1/DIPLOMAS?folio=eq.${encodeURIComponent(folioBuscado)}`;
                     respuesta = await fetch(endpoint, {
@@ -71,7 +78,6 @@
                 } else {
                     const data = datosLista[0];
                     
-                    // Extraer los valores soportando tanto MAYÚSCULAS como minúsculas
                     const f_folio = data.FOLIO || data.folio || 'No registrado';
                     const f_nombre = data.NOMBRE || data.nombre || 'No registrado';
                     const f_diplomado = data.DIPLOMADO || data.diplomado || 'No registrado';
